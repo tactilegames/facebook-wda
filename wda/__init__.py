@@ -245,6 +245,14 @@ class BaseClient(object):
         if isinstance(err, WDAPossiblyCrashedError):
             self.session_id = self.session().session_id  # generate new sessionId
             return Callback.RET_RETRY
+        if isinstance(err, WDAStaleElementReferenceError):
+            if 'kAXErrorServerNotFound' in str(err.value.get('message', '')):
+                # The cached XCUIApplication reference in the WDA session is no
+                # longer reachable (app backgrounded / crashed).  Create a new
+                # session with no bundleId so WDA resolves currentApplication to
+                # XCUIDevice.sharedDevice.frontmostApplication, then retry.
+                self.session_id = self.session().session_id
+                return Callback.RET_RETRY
         """ 等待设备恢复上线 """
 
     def _init_callback(self):
